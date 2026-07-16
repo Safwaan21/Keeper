@@ -44,6 +44,7 @@
 		A0000000000000000000000B = {isa = XCConfigurationList; buildConfigurations = (A0000000000000000000000E, A0000000000000000000000F); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 		A0000000000000000000000C = {isa = XCBuildConfiguration; buildSettings = {
 			ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 			CODE_SIGN_ENTITLEMENTS = Keeper/Keeper.entitlements;
 			CODE_SIGN_STYLE = Automatic;
 			COMBINE_HIDPI_IMAGES = YES;
@@ -67,6 +68,7 @@
 		}; name = Debug; };
 		A0000000000000000000000D = {isa = XCBuildConfiguration; buildSettings = {
 			ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 			CODE_SIGN_ENTITLEMENTS = Keeper/Keeper.entitlements;
 			CODE_SIGN_STYLE = Automatic;
 			COMBINE_HIDPI_IMAGES = YES;
