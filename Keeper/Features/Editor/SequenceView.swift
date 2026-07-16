@@ -5,10 +5,14 @@ import UniformTypeIdentifiers
 struct SequenceView: View {
     @EnvironmentObject private var library: MacroLibrary
     @EnvironmentObject private var player: MacroPlayer
+    @EnvironmentObject private var recorder: MacroRecorder
+    @EnvironmentObject private var permissions: Permissions
     let macro: MacroDocument
     @Binding var selectedStep: UUID?
     @State private var expanded: Set<UUID> = []
     @State private var draggedBlock: UUID?
+    @State private var showCapture = false
+    @State private var capture = CaptureSettings()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -46,7 +50,10 @@ struct SequenceView: View {
                     }
                 }
             }
-        }.background(Theme.canvas)
+        }
+        .background(Theme.canvas)
+        .onAppear { capture = macro.settings }
+        .onChange(of: macro.id) { _, _ in capture = macro.settings }
     }
 
     private var header: some View {
@@ -64,11 +71,62 @@ struct SequenceView: View {
                 } label: {
                     Label("Add macro", systemImage: "plus").font(.system(size: 11, weight: .medium))
                 }.menuStyle(.borderlessButton).fixedSize()
-                Text("\(macro.blocks.count) blocks").font(.system(size: 11)).foregroundStyle(.secondary)
-                Text(macro.duration.formattedElapsed).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+                recordButton
+                runButton
             }
             if player.isPlaying { ProgressView(value: player.progress).progressViewStyle(.linear).tint(.primary) }
         }.padding(.horizontal, 18).padding(.top, 17).padding(.bottom, 14)
+    }
+
+    @ViewBuilder private var recordButton: some View {
+        if recorder.isRecording {
+            Button(action: finishRecording) {
+                HStack(spacing: 7) {
+                    Circle().fill(Theme.recording).frame(width: 7, height: 7)
+                    Text(recorder.elapsed.formattedElapsed).monospacedDigit()
+                    Text("Stop").fontWeight(.medium)
+                }
+                .font(.system(size: 11)).padding(.horizontal, 11).frame(height: 28)
+                .background(Theme.recording.opacity(0.1), in: Capsule()).foregroundStyle(Theme.recording)
+            }
+            .buttonStyle(.plain)
+            .keyboardShortcut(".", modifiers: [.command])
+        } else {
+            Button { showCapture.toggle() } label: {
+                Label("Record", systemImage: "record.circle")
+                    .font(.system(size: 11, weight: .medium)).padding(.horizontal, 10).frame(height: 28)
+                    .background(Color.primary.opacity(0.06), in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(player.isPlaying)
+            .popover(isPresented: $showCapture, arrowEdge: .top) {
+                CapturePopover(settings: $capture, start: beginRecording)
+            }
+        }
+    }
+
+    private var runButton: some View {
+        Button {
+            player.isPlaying ? player.stop() : player.play(macro, library: library)
+        } label: {
+            Label(player.isPlaying ? "Stop" : "Run", systemImage: player.isPlaying ? "stop.fill" : "play.fill")
+                .font(.system(size: 11, weight: .semibold)).padding(.horizontal, 11).frame(height: 28)
+                .background(Color.primary, in: Capsule()).foregroundStyle(Theme.canvas)
+        }
+        .buttonStyle(.plain)
+        .disabled(macro.steps.isEmpty || recorder.isRecording || !permissions.accessibility)
+        .help(player.isPlaying ? "Stop playback" : "Run macro")
+    }
+
+    private func beginRecording() {
+        guard permissions.accessibility else { permissions.request(); return }
+        guard recorder.start(settings: capture) else { return }
+        showCapture = false
+    }
+
+    private func finishRecording() {
+        let steps = recorder.stop()
+        library.update(macro.id) { $0.steps = steps; $0.settings = capture }
     }
 
     @ViewBuilder private func blockMenu(_ block: ActionBlock) -> some View {
