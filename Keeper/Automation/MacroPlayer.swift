@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import CoreGraphics
 
 @MainActor
@@ -97,26 +98,58 @@ final class MacroPlayer: ObservableObject {
     private static func focusApplication(bundleID: String) async {
         var application = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first
 
-        if application == nil,
-           let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-            let configuration = NSWorkspace.OpenConfiguration()
-            configuration.activates = true
-            application = await withCheckedContinuation { continuation in
-                NSWorkspace.shared.openApplication(at: url, configuration: configuration) { app, _ in
-                    continuation.resume(returning: app)
-                }
-            }
-        }
+        // NSWorkspace activation is more reliable than NSRunningApplication when
+        // Keeper is no longer the frontmost process or the target is on another Space.
+        application = await activateThroughWorkspace(bundleID: bundleID) ?? application
 
         guard let application else { return }
-        application.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
 
-        // Activation is asynchronous. Do not send the next input event to the old app.
-        for _ in 0..<40 {
+        for attempt in 0..<4 {
             guard !Task.isCancelled else { return }
-            if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == bundleID { return }
-            try? await Task.sleep(for: .milliseconds(25))
+            application.unhide()
+            application.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+            forceFrontmost(application)
+
+            // Activation is asynchronous. Do not send the next input event to the old app.
+            for _ in 0..<10 {
+                if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == bundleID { return }
+                try? await Task.sleep(for: .milliseconds(25))
+            }
+
+            if attempt == 1 {
+                _ = await activateThroughWorkspace(bundleID: bundleID)
+            }
         }
+    }
+
+    private static func activateThroughWorkspace(bundleID: String) async -> NSRunningApplication? {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return nil }
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        configuration.addsToRecentItems = false
+        configuration.createsNewApplicationInstance = false
+        return await withCheckedContinuation { continuation in
+            NSWorkspace.shared.openApplication(at: url, configuration: configuration) { app, _ in
+                continuation.resume(returning: app)
+            }
+        }
+    }
+
+    private static func forceFrontmost(_ application: NSRunningApplication) {
+        let appElement = AXUIElementCreateApplication(application.processIdentifier)
+        AXUIElementSetAttributeValue(
+            appElement,
+            kAXFrontmostAttribute as CFString,
+            kCFBooleanTrue
+        )
+
+        var focusedWindow: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(
+            appElement,
+            kAXFocusedWindowAttribute as CFString,
+            &focusedWindow
+        ) == .success, let focusedWindow else { return }
+        AXUIElementPerformAction(focusedWindow as! AXUIElement, kAXRaiseAction as CFString)
     }
 }
 
