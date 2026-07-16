@@ -70,7 +70,8 @@ final class MacroPlayer: ObservableObject {
             await focusApplication(bundleID: id)
         case .pointerMove:
             guard let point = step.point else { return }
-            CGEvent(mouseEventSource: nil, mouseType: .mouseMoved, mouseCursorPosition: point, mouseButton: .left)?.post(tap: .cghidEventTap)
+            let event = CGEvent(mouseEventSource: nil, mouseType: .mouseMoved, mouseCursorPosition: point, mouseButton: .left)
+            postGenerated(event)
         case .mouseDown, .mouseUp:
             guard let point = step.point else { return }
             let button = CGMouseButton(rawValue: UInt32(step.button ?? 0)) ?? .left
@@ -84,15 +85,20 @@ final class MacroPlayer: ObservableObject {
             default: type = .leftMouseUp
             }
             let event = CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: button)
-            event?.setIntegerValueField(.mouseEventButtonNumber, value: Int64(step.button ?? 0)); event?.post(tap: .cghidEventTap)
+            event?.setIntegerValueField(.mouseEventButtonNumber, value: Int64(step.button ?? 0)); postGenerated(event)
         case .keyDown, .keyUp:
             guard let code = step.keyCode else { return }
             let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(code), keyDown: step.kind == .keyDown)
             if let flags = step.eventFlags { event?.flags = CGEventFlags(rawValue: flags) }
-            event?.post(tap: .cghidEventTap)
+            postGenerated(event)
         case .macro:
             break
         }
+    }
+
+    private static func postGenerated(_ event: CGEvent?) {
+        event?.setIntegerValueField(.eventSourceUserData, value: AutomationEventMarker.value)
+        event?.post(tap: .cghidEventTap)
     }
 
     private static func focusApplication(bundleID: String) async {
@@ -107,7 +113,7 @@ final class MacroPlayer: ObservableObject {
         for attempt in 0..<4 {
             guard !Task.isCancelled else { return }
             application.unhide()
-            application.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+            application.activate(options: [.activateAllWindows])
             forceFrontmost(application)
 
             // Activation is asynchronous. Do not send the next input event to the old app.

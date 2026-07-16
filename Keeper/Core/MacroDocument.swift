@@ -107,17 +107,85 @@ struct CaptureSettings: Codable, Hashable {
     var hasSelection: Bool { pointerMovement || mouseClicks || keyboard || applications }
 }
 
+enum ScheduleStopRule: String, Codable, CaseIterable, Identifiable {
+    case never, date, runCount
+    var id: Self { self }
+    var title: String {
+        switch self {
+        case .never: "Never"
+        case .date: "At a date"
+        case .runCount: "After runs"
+        }
+    }
+}
+
 struct RunSchedule: Codable, Hashable {
     var enabled = true
-    var time = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: .now) ?? .now
-    var weekdays: Set<Int> = []
+    var startsAt = Date.now.addingTimeInterval(60)
+    var intervalMinutes = 10
+    var stopRule = ScheduleStopRule.never
+    var endsAt = Date.now.addingTimeInterval(3_600)
+    var maximumRuns = 10
+    var completedRuns = 0
     var lastRun: Date?
+    var nextRun: Date?
 
     var description: String {
-        let timeText = time.formatted(date: .omitted, time: .shortened)
-        guard !weekdays.isEmpty else { return "Every day at \(timeText)" }
-        let names = Calendar.current.shortWeekdaySymbols
-        return weekdays.sorted().map { names[$0 - 1] }.joined(separator: ", ") + " at \(timeText)"
+        "Every \(intervalMinutes) min from \(startsAt.formatted(date: .abbreviated, time: .shortened))"
+    }
+
+    func nextOccurrence(after date: Date, includingDate: Bool = false) -> Date? {
+        let interval = TimeInterval(max(intervalMinutes, 1) * 60)
+        var candidate = startsAt
+        if candidate < date || (!includingDate && candidate == date) {
+            let elapsed = max(0, date.timeIntervalSince(startsAt))
+            let periods = floor(elapsed / interval) + (includingDate && elapsed.truncatingRemainder(dividingBy: interval) == 0 ? 0 : 1)
+            candidate = startsAt.addingTimeInterval(periods * interval)
+        }
+        switch stopRule {
+        case .never: break
+        case .date where candidate > endsAt: return nil
+        case .runCount where completedRuns >= max(maximumRuns, 1): return nil
+        default: break
+        }
+        return candidate
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case enabled, startsAt, intervalMinutes, stopRule, endsAt, maximumRuns
+        case completedRuns, lastRun, nextRun
+        // Legacy schedule keys.
+        case time, weekdays
+    }
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        enabled = try values.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
+        startsAt = try values.decodeIfPresent(Date.self, forKey: .startsAt)
+            ?? values.decodeIfPresent(Date.self, forKey: .time)
+            ?? Date.now.addingTimeInterval(60)
+        intervalMinutes = try values.decodeIfPresent(Int.self, forKey: .intervalMinutes) ?? 10
+        stopRule = try values.decodeIfPresent(ScheduleStopRule.self, forKey: .stopRule) ?? .never
+        endsAt = try values.decodeIfPresent(Date.self, forKey: .endsAt) ?? startsAt.addingTimeInterval(3_600)
+        maximumRuns = try values.decodeIfPresent(Int.self, forKey: .maximumRuns) ?? 10
+        completedRuns = try values.decodeIfPresent(Int.self, forKey: .completedRuns) ?? 0
+        lastRun = try values.decodeIfPresent(Date.self, forKey: .lastRun)
+        nextRun = try values.decodeIfPresent(Date.self, forKey: .nextRun)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(enabled, forKey: .enabled)
+        try values.encode(startsAt, forKey: .startsAt)
+        try values.encode(intervalMinutes, forKey: .intervalMinutes)
+        try values.encode(stopRule, forKey: .stopRule)
+        try values.encode(endsAt, forKey: .endsAt)
+        try values.encode(maximumRuns, forKey: .maximumRuns)
+        try values.encode(completedRuns, forKey: .completedRuns)
+        try values.encodeIfPresent(lastRun, forKey: .lastRun)
+        try values.encodeIfPresent(nextRun, forKey: .nextRun)
     }
 }
 

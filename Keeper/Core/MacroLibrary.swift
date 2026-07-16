@@ -117,8 +117,20 @@ final class MacroLibrary: ObservableObject {
         }
     }
 
-    func markScheduleRun(_ id: UUID, at date: Date) {
-        update(id) { $0.schedule?.lastRun = date }
+    func updateScheduleRun(_ id: UUID, at date: Date, nextRun: Date?) {
+        update(id) {
+            $0.schedule?.lastRun = date
+            $0.schedule?.completedRuns += 1
+            $0.schedule?.nextRun = nextRun
+            if nextRun == nil { $0.schedule?.enabled = false }
+        }
+    }
+
+    func advanceSchedule(_ id: UUID, nextRun: Date?) {
+        update(id) {
+            $0.schedule?.nextRun = nextRun
+            if nextRun == nil { $0.schedule?.enabled = false }
+        }
     }
 
     private func load() {

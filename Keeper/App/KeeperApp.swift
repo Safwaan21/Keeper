@@ -6,16 +6,19 @@ struct KeeperApp: App {
     @StateObject private var recorder = MacroRecorder()
     @StateObject private var player = MacroPlayer()
     @StateObject private var permissions = Permissions()
-    private let scheduler = MacroScheduler()
+    @StateObject private var settings = KeeperSettings()
+    @StateObject private var scheduler = MacroScheduler()
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup("Keeper", id: "main") {
             RootView()
                 .environmentObject(library)
                 .environmentObject(recorder)
                 .environmentObject(player)
                 .environmentObject(permissions)
-                .task { scheduler.start(library: library, player: player) }
+                .environmentObject(settings)
+                .environmentObject(scheduler)
+                .task { scheduler.start(library: library, player: player, settings: settings) }
         }
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unifiedCompact(showsTitle: false))
@@ -24,6 +27,18 @@ struct KeeperApp: App {
             CommandGroup(replacing: .newItem) {
                 Button("New Macro") { library.create() }.keyboardShortcut("n")
             }
+        }
+
+        Settings {
+            SettingsView()
+                .environmentObject(settings)
+                .environmentObject(scheduler)
+        }
+
+        MenuBarExtra("Keeper", systemImage: scheduler.isPaused ? "pause.circle" : "command.square") {
+            MenuBarView()
+                .environmentObject(scheduler)
+                .environmentObject(settings)
         }
     }
 }

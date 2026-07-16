@@ -15,4 +15,6 @@ Open `Keeper.xcodeproj` and run the `Keeper` scheme. On first use, grant Keeper 
 - `DesignSystem` contains the visual tokens and reusable surfaces.
 - `Features` contains the library, sequence editor, capture controls, and inspector.
 
-Schedules run while Keeper is open. Reliable execution while the app is closed requires a separately installed launch agent, which is intentionally not installed without explicit user consent.
+Schedules use a fixed interval from their configured start time. Missed and overlapping runs are skipped, and automation pauses when human input is detected by default. The Mac must remain awake and the user session unlocked for UI automation to work.
+
+Keeper remains active from its menu-bar item when the main window is closed. `Keeper → Settings…` controls the emergency shortcut, activity detection, notifications, and launch at login. Login-item registration requires a normally signed app build; unsigned local Release builds report the macOS registration error in Settings.

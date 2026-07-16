@@ -69,25 +69,82 @@ private struct MacroInspector: View {
 
 private struct ScheduleEditor: View {
     @EnvironmentObject private var library: MacroLibrary
+    @EnvironmentObject private var scheduler: MacroScheduler
     let macro: MacroDocument
     private var enabled: Binding<Bool> { Binding(
         get: { macro.schedule?.enabled ?? false },
         set: { value in library.update(macro.id) { doc in
-            if doc.schedule == nil { doc.schedule = RunSchedule() }
-            doc.schedule?.enabled = value
+            var schedule = doc.schedule ?? RunSchedule()
+            schedule.enabled = value
+            if value { schedule.completedRuns = 0 }
+            schedule.nextRun = value ? schedule.nextOccurrence(after: .now, includingDate: true) : nil
+            doc.schedule = schedule
         }}
     )}
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             InspectorLabel("Schedule")
-            Toggle("Run automatically", isOn: enabled).font(.system(size: 11)).toggleStyle(.switch).controlSize(.mini)
+            Toggle("Run automatically", isOn: enabled)
+                .font(.system(size: 11)).toggleStyle(.switch).controlSize(.mini)
+                .onChange(of: enabled.wrappedValue) { _, active in if active { scheduler.resume() } }
             if macro.schedule?.enabled == true {
-                DatePicker("Time", selection: Binding(
-                    get: { macro.schedule?.time ?? .now },
-                    set: { date in library.update(macro.id) { $0.schedule?.time = date } }
-                ), displayedComponents: .hourAndMinute).font(.system(size: 11)).controlSize(.small)
-                Text("Runs while Keeper is open.").font(.system(size: 10)).foregroundStyle(.tertiary)
+                DatePicker("Starts", selection: Binding(
+                    get: { macro.schedule?.startsAt ?? .now },
+                    set: { date in mutate { $0.startsAt = date } }
+                ), displayedComponents: [.date, .hourAndMinute]).font(.system(size: 11)).controlSize(.small)
+
+                HStack {
+                    Text("Every").font(.system(size: 11))
+                    Spacer()
+                    TextField("Minutes", value: Binding(
+                        get: { macro.schedule?.intervalMinutes ?? 10 },
+                        set: { minutes in mutate { $0.intervalMinutes = min(max(minutes, 1), 1_440) } }
+                    ), format: .number)
+                    .textFieldStyle(.roundedBorder).frame(width: 52).multilineTextAlignment(.trailing)
+                    Text("minutes").font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+
+                Picker("Stops", selection: Binding(
+                    get: { macro.schedule?.stopRule ?? .never },
+                    set: { rule in mutate { $0.stopRule = rule } }
+                )) {
+                    ForEach(ScheduleStopRule.allCases) { rule in Text(rule.title).tag(rule) }
+                }.font(.system(size: 11)).controlSize(.small)
+
+                if macro.schedule?.stopRule == .date {
+                    DatePicker("End date", selection: Binding(
+                        get: { macro.schedule?.endsAt ?? .now },
+                        set: { date in mutate { $0.endsAt = date } }
+                    ), displayedComponents: [.date, .hourAndMinute]).font(.system(size: 11)).controlSize(.small)
+                } else if macro.schedule?.stopRule == .runCount {
+                    Stepper("\(macro.schedule?.maximumRuns ?? 10) runs", value: Binding(
+                        get: { macro.schedule?.maximumRuns ?? 10 },
+                        set: { count in mutate { $0.maximumRuns = max(1, count) } }
+                    ), in: 1...10_000).font(.system(size: 11)).controlSize(.small)
+                }
+
+                if let next = macro.schedule?.nextRun {
+                    MetadataRow(label: "Next run", value: next.formatted(date: .abbreviated, time: .shortened))
+                }
+                if scheduler.isPaused {
+                    HStack {
+                        Label("Automation paused", systemImage: "pause.circle").font(.system(size: 10, weight: .medium))
+                        Spacer()
+                        Button("Resume") { scheduler.resume() }.font(.system(size: 10)).buttonStyle(.link)
+                    }
+                }
+                Text("Missed and overlapping runs are skipped. The Mac must be awake and unlocked.")
+                    .font(.system(size: 10)).foregroundStyle(.tertiary)
             }
+        }
+    }
+
+    private func mutate(_ change: (inout RunSchedule) -> Void) {
+        library.update(macro.id) { document in
+            guard var schedule = document.schedule else { return }
+            change(&schedule)
+            schedule.nextRun = schedule.nextOccurrence(after: .now, includingDate: true)
+            document.schedule = schedule
         }
     }
 }
