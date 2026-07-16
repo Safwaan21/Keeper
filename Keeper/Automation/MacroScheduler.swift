@@ -18,7 +18,7 @@ final class MacroScheduler {
                     let current = calendar.dateComponents([.hour, .minute], from: now)
                     guard target.hour == current.hour, target.minute == current.minute else { continue }
                     if let last = schedule.lastRun, calendar.isDate(last, equalTo: now, toGranularity: .minute) { continue }
-                    library.markScheduleRun(macro.id, at: now); player.play(macro); break
+                    library.markScheduleRun(macro.id, at: now); player.play(macro, library: library); break
                 }
             }
         }

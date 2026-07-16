@@ -1,7 +1,7 @@
 import Foundation
 
 enum CaptureKind: String, Codable, CaseIterable, Identifiable {
-    case pointerMove, mouseDown, mouseUp, keyDown, keyUp, application
+    case pointerMove, mouseDown, mouseUp, keyDown, keyUp, application, macro
 
     var id: Self { self }
     var title: String {
@@ -12,6 +12,7 @@ enum CaptureKind: String, Codable, CaseIterable, Identifiable {
         case .keyDown: "Key down"
         case .keyUp: "Key up"
         case .application: "Focus app"
+        case .macro: "Run macro"
         }
     }
     var symbol: String {
@@ -20,6 +21,7 @@ enum CaptureKind: String, Codable, CaseIterable, Identifiable {
         case .mouseDown, .mouseUp: "computermouse"
         case .keyDown, .keyUp: "keyboard"
         case .application: "macwindow.on.rectangle"
+        case .macro: "command.square"
         }
     }
 }
@@ -36,6 +38,8 @@ struct MacroStep: Identifiable, Codable, Hashable {
     var text: String?
     var bundleID: String?
     var appName: String?
+    var referencedMacroID: UUID?
+    var referencedMacroName: String?
 
     var detail: String {
         switch kind {
@@ -45,6 +49,50 @@ struct MacroStep: Identifiable, Codable, Hashable {
         case .keyDown: text?.isEmpty == false ? "\(text!) pressed" : "Key \(keyCode ?? 0) pressed"
         case .keyUp: text?.isEmpty == false ? "\(text!) released" : "Key \(keyCode ?? 0) released"
         case .application: appName ?? bundleID ?? "Unknown app"
+        case .macro: referencedMacroName ?? "Missing macro"
+        }
+    }
+}
+
+enum BlockFamily: Hashable {
+    case pointer, clicks, keyboard, application, macro(UUID?)
+
+    var title: String {
+        switch self {
+        case .pointer: "Pointer movements"
+        case .clicks: "Mouse clicks"
+        case .keyboard: "Keyboard input"
+        case .application: "Application focus"
+        case .macro: "Nested macro"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .pointer: "cursorarrow.motionlines"
+        case .clicks: "computermouse"
+        case .keyboard: "keyboard"
+        case .application: "macwindow.on.rectangle"
+        case .macro: "command.square"
+        }
+    }
+}
+
+struct ActionBlock: Identifiable, Hashable {
+    var id: UUID { steps[0].id }
+    let family: BlockFamily
+    var steps: [MacroStep]
+    var start: TimeInterval { steps.first?.offset ?? 0 }
+    var duration: TimeInterval { max(0, (steps.last?.offset ?? start) - start) }
+}
+
+extension MacroStep {
+    var blockFamily: BlockFamily {
+        switch kind {
+        case .pointerMove: .pointer
+        case .mouseDown, .mouseUp: .clicks
+        case .keyDown, .keyUp: .keyboard
+        case .application: .application
+        case .macro: .macro(referencedMacroID)
         }
     }
 }
@@ -84,4 +132,17 @@ struct MacroDocument: Identifiable, Codable, Hashable {
     var playbackRate = 1.0
 
     var duration: TimeInterval { steps.map(\.offset).max() ?? 0 }
+
+    var blocks: [ActionBlock] {
+        var result: [ActionBlock] = []
+        for step in steps {
+            let family = step.blockFamily
+            if family != .macro(step.referencedMacroID), result.last?.family == family {
+                result[result.count - 1].steps.append(step)
+            } else {
+                result.append(ActionBlock(family: family, steps: [step]))
+            }
+        }
+        return result
+    }
 }

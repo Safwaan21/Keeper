@@ -2,6 +2,8 @@
 
 Keeper is a native macOS macro recorder and sequence editor built with SwiftUI, AppKit, and Core Graphics.
 
+Recorded events are presented as expandable action blocks. Blocks can be reordered by dragging, copied or duplicated from their context menu, and composed by adding another macro. Keeper rejects both direct and indirect recursive macro references.
+
 ## Run
 
 Open `Keeper.xcodeproj` and run the `Keeper` scheme. On first use, grant Keeper access in **System Settings → Privacy & Security → Accessibility**. macOS may require restarting Keeper after granting access.

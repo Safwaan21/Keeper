@@ -62,7 +62,7 @@ struct RootView: View {
 
                 Button {
                     guard let macro = library.selected else { return }
-                    player.isPlaying ? player.stop() : player.play(macro)
+                    player.isPlaying ? player.stop() : player.play(macro, library: library)
                 } label: {
                     Image(systemName: player.isPlaying ? "stop.fill" : "play.fill")
                         .font(.system(size: 11, weight: .semibold)).frame(width: 30, height: 30)

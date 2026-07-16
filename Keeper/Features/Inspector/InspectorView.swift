@@ -107,10 +107,10 @@ private struct StepInspector: View {
                 InspectorLabel("Timing")
                 HStack {
                     Text("Offset").font(.system(size: 11)); Spacer()
-                    TextField("Seconds", value: Binding(
-                        get: { step.offset }, set: { value in update { $0.offset = max(0, value) } }
-                    ), format: .number.precision(.fractionLength(2)))
-                    .textFieldStyle(.roundedBorder).frame(width: 72).multilineTextAlignment(.trailing).font(.system(size: 11, design: .monospaced))
+                    OffsetEditor(value: step.offset) { value in
+                        update { $0.offset = value }
+                    }
+                    .id(step.id)
                     Text("s").font(.system(size: 10)).foregroundStyle(.secondary)
                 }
             }
@@ -128,6 +128,53 @@ private struct StepInspector: View {
             guard let index = macro.steps.firstIndex(where: { $0.id == step.id }) else { return }
             transform(&macro.steps[index]); macro.steps.sort { $0.offset < $1.offset }
         }
+    }
+}
+
+private struct OffsetEditor: View {
+    let value: TimeInterval
+    let commit: (TimeInterval) -> Void
+    @State private var draft: String
+    @FocusState private var isFocused: Bool
+
+    init(value: TimeInterval, commit: @escaping (TimeInterval) -> Void) {
+        self.value = value
+        self.commit = commit
+        _draft = State(initialValue: String(format: "%.2f", value))
+    }
+
+    var body: some View {
+        TextField("Seconds", text: $draft)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: 72)
+            .multilineTextAlignment(.trailing)
+            .font(.system(size: 11, design: .monospaced))
+            .focused($isFocused)
+            .onSubmit {
+                commitDraft()
+                isFocused = false
+            }
+            .onExitCommand {
+                draft = String(format: "%.2f", value)
+                isFocused = false
+            }
+            .onChange(of: isFocused) { wasFocused, focused in
+                if wasFocused && !focused { commitDraft() }
+            }
+            .onChange(of: value) { _, newValue in
+                if !isFocused { draft = String(format: "%.2f", newValue) }
+            }
+    }
+
+    private func commitDraft() {
+        let normalized = draft.replacingOccurrences(of: ",", with: ".")
+        guard let number = Double(normalized), number.isFinite else {
+            draft = String(format: "%.2f", value)
+            return
+        }
+        let clamped = max(0, number)
+        draft = String(format: "%.2f", clamped)
+        if clamped != value { commit(clamped) }
     }
 }
 
