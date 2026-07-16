@@ -1,0 +1,94 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 77;
+	objects = {
+		A00000000000000000000001 = {isa = PBXFileSystemSynchronizedRootGroup; path = Keeper; sourceTree = "<group>"; };
+		A00000000000000000000002 = {isa = PBXGroup; children = (A00000000000000000000001, A00000000000000000000003); sourceTree = "<group>"; };
+		A00000000000000000000003 = {isa = PBXGroup; children = (A00000000000000000000004); name = Products; sourceTree = "<group>"; };
+		A00000000000000000000004 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Keeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000000005 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000006 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000007 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000008 = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000000009;
+			buildPhases = (A00000000000000000000006, A00000000000000000000005, A00000000000000000000007);
+			buildRules = ();
+			dependencies = ();
+			fileSystemSynchronizedGroups = (A00000000000000000000001);
+			name = Keeper;
+			packageProductDependencies = ();
+			productName = Keeper;
+			productReference = A00000000000000000000004;
+			productType = "com.apple.product-type.application";
+		};
+		A0000000000000000000000A = {
+			isa = PBXProject;
+			attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1630; LastUpgradeCheck = 1630; TargetAttributes = {A00000000000000000000008 = {CreatedOnToolsVersion = 16.3;};};};
+			buildConfigurationList = A0000000000000000000000B;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = A00000000000000000000002;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A00000000000000000000003;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (A00000000000000000000008);
+		};
+		A00000000000000000000009 = {isa = XCConfigurationList; buildConfigurations = (A0000000000000000000000C, A0000000000000000000000D); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A0000000000000000000000B = {isa = XCConfigurationList; buildConfigurations = (A0000000000000000000000E, A0000000000000000000000F); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A0000000000000000000000C = {isa = XCBuildConfiguration; buildSettings = {
+			ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
+			CODE_SIGN_ENTITLEMENTS = Keeper/Keeper.entitlements;
+			CODE_SIGN_STYLE = Automatic;
+			COMBINE_HIDPI_IMAGES = YES;
+			CURRENT_PROJECT_VERSION = 1;
+			DEVELOPMENT_TEAM = "";
+			ENABLE_HARDENED_RUNTIME = YES;
+			GENERATE_INFOPLIST_FILE = YES;
+			INFOPLIST_KEY_CFBundleDisplayName = Keeper;
+			INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+			INFOPLIST_KEY_NSAppleEventsUsageDescription = "Keeper uses automation access to focus applications during macro playback.";
+			INFOPLIST_KEY_NSHumanReadableCopyright = "";
+			LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+			MACOSX_DEPLOYMENT_TARGET = 14.0;
+			MARKETING_VERSION = 1.0;
+			PRODUCT_BUNDLE_IDENTIFIER = com.keeper.macros;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SWIFT_EMIT_LOC_STRINGS = YES;
+			SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			SWIFT_STRICT_CONCURRENCY = minimal;
+			SWIFT_VERSION = 5.0;
+		}; name = Debug; };
+		A0000000000000000000000D = {isa = XCBuildConfiguration; buildSettings = {
+			ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
+			CODE_SIGN_ENTITLEMENTS = Keeper/Keeper.entitlements;
+			CODE_SIGN_STYLE = Automatic;
+			COMBINE_HIDPI_IMAGES = YES;
+			CURRENT_PROJECT_VERSION = 1;
+			DEVELOPMENT_TEAM = "";
+			ENABLE_HARDENED_RUNTIME = YES;
+			GENERATE_INFOPLIST_FILE = YES;
+			INFOPLIST_KEY_CFBundleDisplayName = Keeper;
+			INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+			INFOPLIST_KEY_NSAppleEventsUsageDescription = "Keeper uses automation access to focus applications during macro playback.";
+			LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+			MACOSX_DEPLOYMENT_TARGET = 14.0;
+			MARKETING_VERSION = 1.0;
+			PRODUCT_BUNDLE_IDENTIFIER = com.keeper.macros;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SWIFT_COMPILATION_MODE = wholemodule;
+			SWIFT_EMIT_LOC_STRINGS = YES;
+			SWIFT_STRICT_CONCURRENCY = minimal;
+			SWIFT_VERSION = 5.0;
+		}; name = Release; };
+		A0000000000000000000000E = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_TESTABILITY = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = 0; ONLY_ACTIVE_ARCH = YES; SDKROOT = macosx; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;}; name = Debug; };
+		A0000000000000000000000F = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; GCC_C_LANGUAGE_STANDARD = gnu17; SDKROOT = macosx; SWIFT_COMPILATION_MODE = wholemodule;}; name = Release; };
+	};
+	rootObject = A0000000000000000000000A;
+}
